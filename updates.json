@@ -1,0 +1,25 @@
+{
+  "lastChecked": "2026-10-09T09:00:00Z",
+  "updates": [
+    {
+      "title": "Week of October 7, 2026 — Intune Service Release",
+      "url": "https://learn.microsoft.com/en-us/mem/intune/fundamentals/whats-new",
+      "highlights": [
+        "New Settings Catalog settings for Windows 11 24H2 security features",
+        "Improved Autopilot device preparation profile with faster provisioning",
+        "Enhanced App Protection Policy reporting for iOS and Android",
+        "New Endpoint Privilege Management elevation rules for enterprise apps"
+      ]
+    },
+    {
+      "title": "Week of September 22, 2026 — Intune Service Release",
+      "url": "https://learn.microsoft.com/en-us/mem/intune/fundamentals/whats-new",
+      "highlights": [
+        "Co-management workload improvements for hybrid AAD joined devices",
+        "New compliance policy settings for macOS 15 Sequoia",
+        "Graph API updates for bulk device management operations",
+        "Improved device filter performance for large environments"
+      ]
+    }
+  ]
+}
