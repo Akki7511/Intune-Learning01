@@ -3,7 +3,7 @@
 // Enables offline use after first load
 // ============================================================
 
-const CACHE  = 'intune-hub-v6';
+const CACHE  = 'intune-hub-v7';
 const ASSETS = [
   './',
   './index.html',

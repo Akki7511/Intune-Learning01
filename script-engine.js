@@ -782,12 +782,12 @@ try {
 
     # ── WINDOWS UPDATE SERVICE ────────────────────────────────────
     $wuSvc = Get-Service -Name wuauserv -ErrorAction SilentlyContinue
-    Write-Output "`n=== Windows Update Service ==="
+    Write-Output "\`n=== Windows Update Service ==="
     Write-Output "  Status: $($wuSvc.Status) | StartType: $($wuSvc.StartType)"
 
     # ── OS BUILD ─────────────────────────────────────────────────
     $build = (Get-CimInstance -ClassName Win32_OperatingSystem).BuildNumber
-    Write-Output "`n=== OS Build: $build ==="
+    Write-Output "\`n=== OS Build: $build ==="
 
     # ── PENDING REBOOT CHECK ──────────────────────────────────────
     $pendingReboot = $false
@@ -797,7 +797,7 @@ try {
     if (Test-Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\PendingFileRenameOperations') {
         $pendingReboot = $true
     }
-    Write-Output "`nPending Reboot: $pendingReboot"
+    Write-Output "\`nPending Reboot: $pendingReboot"
 
     exit 0
 } catch {
