@@ -154,6 +154,26 @@ function configStepsSection(id) {
          d:"The ESP shows a progress screen during first-boot setup, preventing users from accessing the desktop until all apps and policies are applied.",
          s:[{k:"Show app and profile config progress",v:"Yes"},{k:"Block device use until all apps are installed",v:"Yes"},{k:"Allow users to reset device if install error occurs",v:"Yes (for self-remediation)"},{k:"Allow users to collect logs",v:"Yes"}]}
       ]},
+    i5: { intro:"How to create and assign Windows Update Rings to manage Windows 10/11 quality and feature updates across your device fleet.",
+      steps:[
+        {t:"Navigate to Windows Update Rings", p:"Devices &#8594; Windows updates &#8594; Update rings for Windows 10 and later &#8594; Create profile",
+         d:"Update rings define how and when Windows devices receive quality updates (patches) and feature updates (major Windows versions). Create separate rings for different groups: Pilot → Early Adopters → Broad deployment."},
+        {t:"Name the Ring", p:"Basics tab",
+         d:"Use a naming convention that identifies the deferral tier and target group.",
+         s:[{k:"Name example",v:"WIN-UpdateRing-Pilot-v1"},{k:"Description",v:"Windows Update ring for IT pilot group — 0-day deferral for rapid validation"}]},
+        {t:"Configure Update Ring Settings", p:"Update ring settings tab",
+         d:"Set deferral periods to stagger update rollout. Deferrals delay when the device first sees an update — the Pilot ring gets it first, Broad ring gets it last.",
+         s:[{k:"Microsoft product updates",v:"Allow"},{k:"Windows drivers",v:"Allow"},{k:"Quality update deferral (Pilot)",v:"0 days"},{k:"Quality update deferral (Early Adopter)",v:"7 days"},{k:"Quality update deferral (Broad)",v:"14 days"},{k:"Feature update deferral (Pilot)",v:"0 days"},{k:"Feature update deferral (Early Adopter)",v:"30 days"},{k:"Feature update deferral (Broad)",v:"60 days"},{k:"Active hours start / end",v:"8 AM – 5 PM (prevents restarts during business hours)"}]},
+        {t:"Set Compliance Deadlines", p:"Update ring settings tab &#8594; Compliance deadline settings",
+         d:"Deadlines enforce installation within a set number of days from when the update became available. Without deadlines users can snooze restart prompts indefinitely.",
+         s:[{k:"Deadline for quality updates",v:"5 days"},{k:"Deadline for feature updates",v:"14 days"},{k:"Grace period",v:"2 days (user warning before forced restart)"},{k:"Auto reboot before deadline",v:"Yes"}]},
+        {t:"Assign Rings to Groups", p:"Assignments tab &#8594; Include groups",
+         d:"Each ring targets a different security group. Never assign to All Devices initially — validate with Pilot first.",
+         s:[{k:"Pilot ring",v:"SG-IT-Pilot (5–10 IT devices — 0-day deferral)"},{k:"Early Adopter ring",v:"SG-EarlyAdopters-Windows (10–20% of fleet)"},{k:"Broad ring",v:"SG-All-Corporate-Windows (remaining devices)"},{k:"Exclude from all rings",v:"SG-Kiosk-Devices (manage update timing separately)"}]},
+        {t:"Monitor Update Compliance", p:"Reports &#8594; Windows updates &#8594; Windows Update reports",
+         d:"Track how many devices in each ring have successfully installed the latest quality or feature update. Filter by ring to identify lagging devices.",
+         s:[{k:"Quality update report",v:"Reports &#8594; Windows updates &#8594; Windows Update distribution"},{k:"Feature update report",v:"Reports &#8594; Windows updates &#8594; Feature update device state"},{k:"Key metric",v:"% of fleet on current patch — target 95%+ within 14 days of release"}]}
+      ]},
     a1: { intro:"How to deploy the MDM Security Baseline — including full BitLocker encryption setup — via Intune Endpoint Security.",
       steps:[
         {t:"Open Security Baselines", p:"Endpoint security &#8594; Security baselines &#8594; MDM Security Baseline &#8594; Create profile",
@@ -463,6 +483,23 @@ function visualSection(id) {
          a:'Note the error code: 0x801c03ea = device not registered; 0x80070774 = TPM issue. Check Event Viewer &#8594; ModernDeployment logs'},
       ]
     },
+    i5: {
+      ft: 'Windows Update Rings — Staged Rollout Flow',
+      flow: [
+        {i:'&#129513;', l:'Pilot Ring',       s:'IT team — 0-day deferral'},
+        {i:'&#128640;', l:'Early Adopters',   s:'7-day quality deferral'},
+        {i:'&#128101;', l:'Broad Rollout',    s:'14-day quality deferral'},
+        {i:'&#9989;',   l:'Compliant Fleet',  s:'All devices on latest patch'},
+      ],
+      trouble: [
+        {q:'Update ring assigned but devices not updating',
+         a:'Confirm devices are checking in: Devices &#8594; All devices &#8594; filter by last check-in. Devices not checked in within 30 days will not receive updates. Force sync on active devices'},
+        {q:'Feature updates not applying despite ring assignment',
+         a:'Verify the device is NOT managed by WSUS or the SCCM Windows Update workload. In co-managed environments only one agent can own the Windows Update workload — slide it to Intune in SCCM Co-management Properties'},
+        {q:'Users delaying restarts indefinitely',
+         a:'Set compliance deadlines in the update ring: Deadline for quality updates = 5 days, Grace period = 2 days. Without deadlines users can snooze the restart prompt indefinitely'},
+      ]
+    },
     a1: {
       ft: 'Security Baseline — Deployment Flow',
       flow: [
@@ -649,6 +686,10 @@ function videoSection(id) {
       { label: 'Windows Autopilot — Full Walkthrough', q: 'windows+autopilot+tutorial+microsoft+mechanics+step+by+step', ch: 'Microsoft Mechanics' },
       { label: 'Autopilot White Glove & Pre-provisioning', q: 'windows+autopilot+white+glove+pre+provisioning+tutorial', ch: 'Microsoft' },
     ]},
+    i5: { items: [
+      { label: 'Windows Update Rings in Microsoft Intune', q: 'microsoft+intune+windows+update+rings+tutorial+step+by+step', ch: 'Microsoft Mechanics' },
+      { label: 'Windows Update for Business — Deferrals & Compliance Deadlines', q: 'windows+update+for+business+intune+deferral+compliance+deadline+tutorial', ch: 'Microsoft' },
+    ]},
     a1: { items: [
       { label: 'Security Baselines in Microsoft Intune', q: 'microsoft+intune+security+baselines+tutorial+hardening', ch: 'Microsoft Mechanics' },
       { label: 'CIS & Microsoft Security Benchmark', q: 'microsoft+intune+CIS+benchmark+security+hardening+policy', ch: 'Microsoft' },
@@ -812,7 +853,7 @@ const PAGES = {
   <div class="breadcrumb">🏠 Home</div>
   <h1>Microsoft Intune — Beginner to Expert</h1>
   <div class="meta-row">
-    <span class="meta-chip">15 Modules</span>
+    <span class="meta-chip">16 Modules</span>
     <span class="meta-chip">4 Quizzes</span>
     <span class="meta-chip">6 Guided Scenarios</span>
     <span class="meta-chip">33 Error Codes</span>
@@ -849,6 +890,7 @@ const PAGES = {
     {id:'i2',level:'Intermediate',color:'#ffd700',title:'Conditional Access',desc:'Block non-compliant devices from M365'},
     {id:'i3',level:'Intermediate',color:'#ffd700',title:'Reporting & Monitoring',desc:'Dashboards, alerts, and device health'},
     {id:'i4',level:'Intermediate',color:'#ffd700',title:'Windows Autopilot',desc:'Zero-touch device provisioning'},
+    {id:'i5',level:'Intermediate',color:'#ffd700',title:'Windows Update Rings',desc:'Stage Windows updates with deferral rings'},
     {id:'a1',level:'Advanced',color:'#ff7a7a',title:'Security Baselines',desc:'CIS, NIST, Microsoft hardening policies'},
     {id:'a2',level:'Advanced',color:'#ff7a7a',title:'PowerShell & Scripts',desc:'Automate Intune with scripts and Graph'},
     {id:'a3',level:'Advanced',color:'#ff7a7a',title:'Co-management & SCCM',desc:'Hybrid management with Config Manager'},
@@ -1638,8 +1680,242 @@ ${configStepsSection('i4')}
 ${visualSection('i4')}
 ${videoSection('i4')}
 <div class="btn-row">
-  <button class="btn btn-primary" onclick="markComplete('i4'); showPage('quiz-intermediate')">Take Intermediate Quiz →</button>
+  <button class="btn btn-primary" onclick="markComplete('i4'); showPage('i5')">Next: Windows Update Rings →</button>
   <button class="btn btn-outline" onclick="markComplete('i4')">✓ Mark Complete</button>
+</div>
+</div>`},
+
+  // ─────────────────────────────────────────────
+  // I5 — WINDOWS UPDATE RINGS
+  // ─────────────────────────────────────────────
+  i5: {
+    title: 'Windows Update Rings',
+    level: 'Intermediate',
+    render: () => `
+<div class="content-header">
+  <div class="breadcrumb"><span onclick="showPage('dashboard')">🏠 Home</span> › <span class="level-badge badge-intermediate">Intermediate</span></div>
+  <h1>Windows Update Rings</h1>
+  <div class="meta-row"><span class="meta-chip">~25 min</span><span class="meta-chip badge-intermediate">Intermediate</span></div>
+</div>
+<div class="content-body">
+
+<div class="section">
+  <h2>🔄 What are Windows Update Rings?</h2>
+  <p>Windows Update Rings are Intune policies that control <strong>when and how</strong> Windows 10/11 devices receive quality updates (monthly security patches) and feature updates (major OS versions like Windows 11 24H2). Instead of every device updating at the same time — causing simultaneous reboots and sudden app compatibility issues — you stage updates through rings:</p>
+  <ul>
+    <li><strong>Pilot Ring</strong> — IT team (0-day deferral): gets updates immediately for validation</li>
+    <li><strong>Early Adopter Ring</strong> — Tech-savvy users (7-day deferral): catches real-world issues before broad rollout</li>
+    <li><strong>Broad Ring</strong> — All corporate devices (14–21-day deferral): only after Pilot and Early Adopter confirm stability</li>
+  </ul>
+  <div class="callout callout-info">
+    <span>💡</span>
+    <div>Update rings are based on <strong>Windows Update for Business (WUfB)</strong>. Intune acts as the management layer — it writes the same CSP/registry keys that WUfB uses, but from the cloud without needing WSUS or SCCM.</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>⚙️ Quality vs Feature Updates</h2>
+  <table style="width:100%;font-size:13px;border-collapse:collapse;">
+    <tr style="border-bottom:1px solid var(--border);">
+      <th style="padding:8px;text-align:left;color:var(--accent2);">Update Type</th>
+      <th style="padding:8px;text-align:left;color:var(--accent2);">Release Cadence</th>
+      <th style="padding:8px;text-align:left;color:var(--accent2);">Example</th>
+      <th style="padding:8px;text-align:left;color:var(--accent2);">Typical Deferral (Broad)</th>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:8px;">Quality Update (Cumulative)</td><td style="padding:8px;">Monthly (Patch Tuesday)</td><td style="padding:8px;">KB5034441 — Jan 2024 security patch</td><td style="padding:8px;">7–21 days</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:8px;">Feature Update</td><td style="padding:8px;">Annually (Autumn)</td><td style="padding:8px;">Windows 11 24H2, Windows 10 22H2</td><td style="padding:8px;">60–120 days</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;">Driver Update</td><td style="padding:8px;">As published by OEM</td><td style="padding:8px;">Intel NIC driver update</td><td style="padding:8px;">0–7 days (usually low risk)</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>📝 Setting Up Update Rings</h2>
+  <div class="steps">
+    <div class="step"><div class="step-content"><div class="step-title">Create a Pilot Ring (0-day deferral)</div><div class="step-desc">Devices &#8594; Windows updates &#8594; Update rings for Windows 10 and later &#8594; Create profile. Name: WIN-UpdateRing-Pilot. Quality deferral: 0 days. Feature deferral: 0 days. Assign to SG-IT-Pilot (your IT team's devices).</div></div></div>
+    <div class="step"><div class="step-content"><div class="step-title">Create an Early Adopter Ring (7-day deferral)</div><div class="step-desc">Quality deferral: 7 days. Feature deferral: 30 days. Assign to SG-EarlyAdopters-Windows. This ring gets patches after the Pilot team validates them — catching issues before the whole fleet is affected.</div></div></div>
+    <div class="step"><div class="step-content"><div class="step-title">Create a Broad Ring (14-day deferral)</div><div class="step-desc">Quality deferral: 14 days. Feature deferral: 60 days. Assign to SG-All-Corporate-Windows. Excludes kiosk and service devices — manage those separately with longer deferrals.</div></div></div>
+    <div class="step"><div class="step-content"><div class="step-title">Set Compliance Deadlines</div><div class="step-desc">Without deadlines, users can keep snoozing restarts. Set: Quality deadline = 5 days, Feature deadline = 14 days, Grace period = 2 days. After the deadline + grace period, the restart is forced.</div></div></div>
+    <div class="step"><div class="step-content"><div class="step-title">Monitor Update Compliance</div><div class="step-desc">Reports &#8594; Windows updates &#8594; Windows Update distribution. Shows patch compliance % per ring. Target: 95%+ within 14 days of release. Devices lagging behind typically have check-in issues or are offline.</div></div></div>
+  </div>
+
+  <div class="code-block">
+<span class="comment"># Check Windows Update ring settings applied on a device (run locally)</span>
+<span class="kw">Get-ItemProperty</span> -Path <span class="str">"HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"</span> |
+  Select-Object DeferQualityUpdates, DeferQualityUpdatesPeriodInDays,
+                DeferFeatureUpdates, DeferFeatureUpdatesPeriodInDays
+
+<span class="comment"># Output should match the ring settings you configured in Intune</span>
+<span class="comment"># e.g. DeferQualityUpdates = 1, DeferQualityUpdatesPeriodInDays = 14</span>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-label">🏢 Practical Scenario — Preventing Patch Tuesday Chaos</div>
+    <h4>Staged rollout prevents simultaneous reboots across 800 devices</h4>
+    <p>Before update rings, Contoso's 800 Windows devices all received Patch Tuesday updates the same day. At 11 AM every second Tuesday, 200 devices rebooted simultaneously, knocking out half the customer service floor during peak hours. After implementing rings: the Pilot ring (15 IT devices) receives the patch immediately. The Early Adopter ring (80 devices) gets it 7 days later. The Broad ring (700 devices) gets it 14 days later. IT now has two weeks to catch any bad patches before they affect the majority of the fleet — and restarts are scheduled for 6 AM during active hours maintenance windows.</p>
+  </div>
+</div>
+
+<div class="section">
+  <h2>⚠️ Pausing Updates</h2>
+  <p>If a bad update is deployed (e.g. a patch causes BSOD or breaks a critical app), you can <strong>pause</strong> the update ring:</p>
+  <ul>
+    <li>Devices &#8594; Windows updates &#8594; [select ring] &#8594; Pause (quality or feature updates)</li>
+    <li>Pause duration: up to 35 days</li>
+    <li>After 35 days, pausing auto-expires and updates resume — Microsoft enforces this to prevent devices falling too far behind on security patches</li>
+  </ul>
+  <div class="callout callout-warn">
+    <span>⚠️</span>
+    <div>Pause is a short-term emergency control. Use it to give Microsoft time to release a corrected patch. Do not leave a ring paused permanently — stale devices become a security liability.</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>⚡ Expedited Updates — Emergency Zero-Day Patching</h2>
+  <p>Expedited updates let you push a specific quality update to devices <strong>immediately</strong>, bypassing all deferral periods and compliance deadlines. Use this when a critical zero-day vulnerability (e.g. a PrintNightmare or MSHTML exploit) is actively being attacked and you cannot wait 7–21 days for your normal ring schedule.</p>
+  <p>How expedited updates differ from standard update rings:</p>
+  <table style="width:100%;font-size:13px;border-collapse:collapse;">
+    <tr style="border-bottom:1px solid var(--border);">
+      <th style="padding:8px;text-align:left;color:var(--accent2);">Behaviour</th>
+      <th style="padding:8px;text-align:left;color:var(--accent2);">Standard Ring</th>
+      <th style="padding:8px;text-align:left;color:var(--accent2);">Expedited Update</th>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:8px;">Deferral period</td><td style="padding:8px;">Honoured (7–60 days)</td><td style="padding:8px;">Bypassed — installs ASAP</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:8px;">Compliance deadline</td><td style="padding:8px;">N days after available</td><td style="padding:8px;">Overridden — urgent timeline</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:8px;">User restart experience</td><td style="padding:8px;">Maintenance window</td><td style="padding:8px;">1-day grace period before forced restart</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;">Applies to</td><td style="padding:8px;">All future updates</td><td style="padding:8px;">One specific patch (by KB number)</td>
+    </tr>
+  </table>
+  <div class="steps" style="margin-top:16px;">
+    <div class="step"><div class="step-content"><div class="step-title">Create an Expedited Update Policy</div><div class="step-desc">Devices &#8594; Windows updates &#8594; Expedite updates &#8594; Create. Select the quality update you need to force (by KB article or Windows version). Set the days before forced restart (minimum 0, recommended 1 day to give users a brief warning).</div></div></div>
+    <div class="step"><div class="step-content"><div class="step-title">Assign to All Devices or a Targeted Group</div><div class="step-desc">Unlike update rings, expedited updates are typically assigned to All Devices or the group containing devices running the vulnerable OS version. The update bypasses any ring it would normally fall under.</div></div></div>
+    <div class="step"><div class="step-content"><div class="step-title">Monitor Installation Progress</div><div class="step-desc">Reports &#8594; Windows updates &#8594; Windows Expedited update report. Track installation status per device. Expect 80%+ within 24–48 hours on devices that are online and checked in.</div></div></div>
+  </div>
+  <div class="callout callout-warn">
+    <span>⚠️</span>
+    <div>Expedited updates force a restart within 1 day regardless of active hours. Warn users before deploying — or schedule the expedited update to start outside business hours if the vulnerability is not actively being exploited.</div>
+  </div>
+  <div class="scenario">
+    <div class="scenario-label">🏢 Practical Scenario — Zero-Day Response</div>
+    <h4>Critical CVSS 9.8 vulnerability patched across 600 devices in under 12 hours</h4>
+    <p>A critical zero-day RCE vulnerability is published at 10 AM. Microsoft releases an out-of-band patch (not a Patch Tuesday release) the same day. The Broad ring has a 14-day deferral — waiting is not acceptable for a CVSS 9.8 vulnerability actively being exploited. The security team creates an Expedited Update policy targeting the specific KB, assigns it to All Corporate Devices, and sets days before restart = 1. By 10 PM, 94% of online devices have installed the patch and restarted. The remaining 6% are offline laptops that install automatically on their next connection. Total exposure window: under 12 hours.</p>
+  </div>
+</div>
+
+<div class="section">
+  <h2>🔗 Co-management Consideration</h2>
+  <p>If you use SCCM co-management, the <strong>Windows Update Policies workload</strong> controls which agent manages Windows updates. Only one agent can own this workload at a time:</p>
+  <ul>
+    <li><strong>Configuration Manager</strong> — SCCM/WSUS controls updates (default when co-management first enabled)</li>
+    <li><strong>Intune</strong> — Windows Update rings in Intune take over, WSUS is ignored</li>
+  </ul>
+  <p>To move the workload: SCCM Console &#8594; Administration &#8594; Cloud Services &#8594; Co-management &#8594; Properties &#8594; Workloads &#8594; slide Windows Update Policies to Intune.</p>
+</div>
+
+<div class="section">
+  <h2>🚨 Real-World Issues &amp; Microsoft Solutions</h2>
+  <p>These are documented real incidents that admins have hit in production environments, with the exact Microsoft-recommended resolution for each.</p>
+
+  <div class="scenario" style="margin-bottom:16px;">
+    <div class="scenario-label">⚠️ Issue 1 — KB5034441 Fails with Error 0x80070643 (WinRE Partition Too Small)</div>
+    <h4>January 2024 Patch Tuesday — widespread failure across millions of devices</h4>
+    <p><strong>What happened:</strong> Microsoft released KB5034441 to patch a critical BitLocker bypass vulnerability (CVE-2024-20666). The patch required resizing the Windows Recovery Environment (WinRE) partition. On most devices built before Windows 11, the WinRE partition was only 500 MB — too small. The patch failed silently with error <code>0x80070643</code>, leaving devices appearing as "Failed" in the Intune update report even though the OS itself was fine.</p>
+    <p><strong>Scale:</strong> Affected the majority of Windows 10 22H2 devices built before 2022. In environments of 1,000+ devices, 60–80% failure rates were common.</p>
+    <p><strong>Microsoft's official solution (KB5028997):</strong> Microsoft published a manual script to resize the WinRE partition. Steps:</p>
+    <div class="steps">
+      <div class="step"><div class="step-content"><div class="step-title">Deploy Microsoft's resize script via Intune PowerShell</div><div class="step-desc">Download the official script from Microsoft Support article KB5028997. Upload to Intune: Devices &#8594; Scripts and remediations &#8594; Platform scripts &#8594; Add. Set Run in 64-bit PowerShell = Yes, Run as SYSTEM = Yes.</div></div></div>
+      <div class="step"><div class="step-content"><div class="step-title">Assign to affected devices only</div><div class="step-desc">Create a dynamic group filtering for Windows 10 22H2 devices. Running the script on already-resized partitions is safe — it checks first. Monitor script results: Devices &#8594; [device] &#8594; Device configuration &#8594; [script name].</div></div></div>
+      <div class="step"><div class="step-content"><div class="step-title">Force sync and re-evaluate update</div><div class="step-desc">After the script resizes WinRE, force a device sync. KB5034441 will re-attempt and succeed. The Intune update report will change from Failed to Installed within 30–60 minutes.</div></div></div>
+    </div>
+    <div class="callout callout-warn" style="margin-top:12px;">
+      <span>📋</span>
+      <div><strong>Microsoft reference:</strong> Support article KB5028997 — "Instructions to manually resize your partition to install the WinRE update". Search for "KB5028997 WinRE resize" on support.microsoft.com.</div>
+    </div>
+  </div>
+
+  <div class="scenario" style="margin-bottom:16px;">
+    <div class="scenario-label">⚠️ Issue 2 — Feature Update Blocked by Safeguard Hold</div>
+    <h4>Devices in the Pilot ring (0-day deferral) not receiving Windows 11 upgrade</h4>
+    <p><strong>What happened:</strong> An organisation configured a 0-day feature update deferral for their Pilot ring expecting immediate Windows 11 delivery. Devices stayed on Windows 10 for weeks. No error — the update simply never appeared in Windows Update on the device.</p>
+    <p><strong>Root cause:</strong> Microsoft applies <strong>Safeguard Holds</strong> to specific device hardware or driver combinations known to have compatibility issues with a new feature update. A device under a safeguard hold will not be offered the feature update — regardless of your ring settings — until Microsoft confirms the issue is resolved. This is by design to prevent widespread compatibility failures.</p>
+    <p><strong>Microsoft's solution:</strong></p>
+    <div class="steps">
+      <div class="step"><div class="step-content"><div class="step-title">Check for safeguard holds in the Windows Update for Business report</div><div class="step-desc">Reports &#8594; Windows updates &#8594; Feature update compatibility risks report. Devices under a safeguard hold appear with status "Safeguard hold" and a listed safeguard ID. This report requires Windows Update for Business Reports (Log Analytics workspace) to be configured.</div></div></div>
+      <div class="step"><div class="step-content"><div class="step-title">Identify the blocking driver or app</div><div class="step-desc">Look up the safeguard ID on the Windows Release Health dashboard (aka.ms/WindowsReleaseHealth). Microsoft publishes which driver, hardware, or app is causing the hold and the expected resolution timeline.</div></div></div>
+      <div class="step"><div class="step-content"><div class="step-title">Override the hold (only if you accept the risk)</div><div class="step-desc">If you have resolved the underlying issue (e.g. updated the blocking driver), you can disable safeguard holds per ring using the "Opt out of safeguard holds" setting in the Feature Updates policy (not the ring itself). Microsoft does NOT recommend overriding without fixing the root cause.</div></div></div>
+    </div>
+    <div class="callout callout-info" style="margin-top:12px;">
+      <span>💡</span>
+      <div><strong>Microsoft reference:</strong> "Safeguard holds for Windows feature updates" — docs.microsoft.com. Search "Windows Update safeguard holds Intune" for the current Microsoft Learn article.</div>
+    </div>
+  </div>
+
+  <div class="scenario" style="margin-bottom:16px;">
+    <div class="scenario-label">⚠️ Issue 3 — Update Ring Assigned but Devices Still Updating via WSUS</div>
+    <h4>Co-managed devices ignoring Intune update rings</h4>
+    <p><strong>What happened:</strong> An admin deployed update rings in Intune and assigned them to all Windows devices. Devices continued receiving updates on WSUS schedule with no deferral. The Intune rings appeared assigned and no errors showed in the portal.</p>
+    <p><strong>Root cause:</strong> In a co-managed environment, the <strong>Windows Update Policies workload</strong> was still set to Configuration Manager. When SCCM owns this workload, Intune update rings are delivered to the device but have no effect — WSUS settings take precedence and overwrite the WUfB registry keys.</p>
+    <p><strong>Microsoft's solution:</strong></p>
+    <div class="steps">
+      <div class="step"><div class="step-content"><div class="step-title">Verify current workload ownership in SCCM</div><div class="step-desc">SCCM Console &#8594; Administration &#8594; Cloud Services &#8594; Co-management &#8594; Properties &#8594; Workloads. Check Windows Update Policies slider — if set to Configuration Manager, Intune rings are inactive.</div></div></div>
+      <div class="step"><div class="step-content"><div class="step-title">Pilot the workload move first</div><div class="step-desc">Slide Windows Update Policies to Pilot Intune. This activates Intune rings only for devices in your co-management pilot collection. Verify WSUS is no longer controlling updates on those devices (check registry: HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate — WUServer value should be absent or empty).</div></div></div>
+      <div class="step"><div class="step-content"><div class="step-title">Move to full Intune when validated</div><div class="step-desc">After confirming Intune rings work correctly for the pilot, slide the workload fully to Intune. Remove any WSUS Group Policy Objects that may be overwriting WUfB settings on the same devices.</div></div></div>
+    </div>
+    <div class="callout callout-warn" style="margin-top:12px;">
+      <span>⚠️</span>
+      <div><strong>Key check:</strong> If both SCCM/WSUS and Intune WUfB settings exist on the same device, WSUS always wins. Verify by running <code>reg query HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate /v WUServer</code> on a test device — if a WSUS URL is returned, WSUS still has control.</div>
+    </div>
+  </div>
+
+  <div class="scenario" style="margin-bottom:16px;">
+    <div class="scenario-label">⚠️ Issue 4 — Devices Show "Pending Restart" for Days Without Rebooting</div>
+    <h4>Update installed but devices stuck in "Pending restart" state for 5+ days</h4>
+    <p><strong>What happened:</strong> The Intune update report shows dozens of devices with status "Pending restart" days after the patch installed — well beyond the compliance deadline grace period. Help desk calls spiked as users reported their devices had not yet applied the update.</p>
+    <p><strong>Root cause:</strong> Active Hours were configured too broadly (e.g. 6 AM–11 PM), leaving only a 7-hour overnight window for forced restarts. On laptops that were closed (sleep/hibernate) overnight, Windows could not complete the restart. Additionally, some devices had "Update and Shut Down" appearing instead of "Update and Restart" — common when users shut down rather than restarting.</p>
+    <p><strong>Microsoft's solution:</strong></p>
+    <div class="steps">
+      <div class="step"><div class="step-content"><div class="step-title">Narrow the Active Hours window</div><div class="step-desc">Update ring settings &#8594; Active hours: set to business hours only (e.g. 8 AM–6 PM). Windows will then use the 6 PM–8 AM window to schedule forced restarts. Do not set active hours to more than 18 hours — this leaves too small a window for the OS to force a restart.</div></div></div>
+      <div class="step"><div class="step-content"><div class="step-title">Enable "Engaged restart" settings</div><div class="step-desc">In the update ring, enable Engaged restart: sets a countdown timer visible to the user (e.g. restart required in 3 days). Set restart snooze period = 1 day and engaged restart deadline = 3 days. Users see a persistent notification and cannot dismiss it indefinitely.</div></div></div>
+      <div class="step"><div class="step-content"><div class="step-title">Verify compliance deadline is set and correct</div><div class="step-desc">Confirm Quality update compliance deadline is set (e.g. 5 days) with a grace period of 2 days. Without this, Windows treats the restart as optional even after the patch installs. Check on a test device: run <code>UsoClient.exe StartScan</code> and check Windows Update in Settings to see the pending restart countdown.</div></div></div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-label">⚠️ Issue 5 — Update Ring Applied but Windows Update Report Shows No Data</div>
+    <h4>Reports &#8594; Windows updates shows empty or stale data for all rings</h4>
+    <p><strong>What happened:</strong> Rings were deployed and devices were assigned, but the Windows Update distribution report in Intune showed 0 devices or data from weeks ago. Admins had no visibility into patch compliance.</p>
+    <p><strong>Root cause:</strong> The built-in Intune Windows Update reports rely on devices checking in and sending diagnostic data. Two common causes: (1) Devices had Windows Diagnostic Data set to "Security (0)" via a configuration profile — this level sends no telemetry and is incompatible with Windows Update reporting; (2) The Windows Update for Business Reports workbook (a separate Log Analytics solution) was not configured, causing admins to confuse the basic Intune report with the full WUfB Reports dashboard.</p>
+    <p><strong>Microsoft's solution:</strong></p>
+    <div class="steps">
+      <div class="step"><div class="step-content"><div class="step-title">Set diagnostic data level to Required (minimum)</div><div class="step-desc">In the Settings Catalog profile (or System configuration): System &#8594; Allow Telemetry = 1 (Required). Level 0 (Security) disables all diagnostic data including the update compliance signals Intune needs for reporting. Microsoft requires at least level 1 for Windows Update for Business reports.</div></div></div>
+      <div class="step"><div class="step-content"><div class="step-title">Check device last check-in time</div><div class="step-desc">Devices &#8594; All devices &#8594; filter Last check-in = last 7 days. Devices not checked in within 30 days do not appear in update reports. Force sync on a sample of devices and wait 24 hours for data to refresh.</div></div></div>
+      <div class="step"><div class="step-content"><div class="step-title">Configure Windows Update for Business Reports (advanced)</div><div class="step-desc">For full ring-level compliance dashboards and safeguard hold visibility, set up the WUfB Reports solution: Intune &#8594; Reports &#8594; Windows updates &#8594; Windows Update for Business reports &#8594; connect a Log Analytics workspace. Data populates within 24–48 hours. This gives per-device, per-KB, per-ring drill-down that the basic report does not provide.</div></div></div>
+    </div>
+    <div class="callout callout-info" style="margin-top:12px;">
+      <span>💡</span>
+      <div><strong>Microsoft reference:</strong> "Enable Windows Update for Business reports" — Microsoft Learn. Search "Windows Update for Business Reports Log Analytics Intune" for setup steps.</div>
+    </div>
+  </div>
+</div>
+
+${configStepsSection('i5')}
+${visualSection('i5')}
+${videoSection('i5')}
+<div class="btn-row">
+  <button class="btn btn-primary" onclick="markComplete('i5'); showPage('quiz-intermediate')">Take Intermediate Quiz →</button>
+  <button class="btn btn-outline" onclick="markComplete('i5')">✓ Mark Complete</button>
 </div>
 </div>`},
 
@@ -2782,6 +3058,18 @@ ${videoSection('e3')}
          a:'(1) Devices &#8594; [device] &#8594; select the app &#8594; view installation status and exact error code. (2) Common codes: 0x87D300D9 = IME unhealthy; 0x87D13B64 = detection rule failed; 0xC7D14FB5 = timeout (increase max run time); 0x80070057 = invalid install command. (3) Check IME logs: C:\\ProgramData\\Microsoft\\IntuneManagementExtension\\Logs\\IntuneManagementExtension.log. (4) Verify IME service is running (Services.msc). (5) Test the install command manually as SYSTEM: use PsExec.exe -s cmd, then run the install command. (6) Verify detection rules &#8212; run them in PowerShell under SYSTEM context. (7) Increase timeout if app is large. (8) Check antivirus is not blocking the installer.',
          sc:'LOB app failing with 0x87D13B64 (detection failure) &#8212; the app installed successfully but always reported failed. IME log showed detection script exit code 1. Investigation: detection script checked a registry key at HKCU (current user) but IME runs as SYSTEM &#8212; HKCU for SYSTEM is empty. Fixed: changed detection to HKLM. 100% success on re-deployment.',
          fu:['Where are the IME log files and what do you look for when troubleshooting?','What is the difference between System and User install context and when would you change it?','How do you increase the Win32 app installation timeout?']},
+
+        {q:'What are Windows Update Rings in Intune and how do you structure a staged rollout?',
+         lvl:'intermediate',lc:'#ffd700',ll:'Intermediate',cat:'updates',cl:'Windows Updates',
+         a:'Windows Update Rings are Intune policies that control when devices receive quality (monthly patch) and feature (annual OS version) updates using Windows Update for Business. You create rings with different deferral periods so updates are validated before reaching the full fleet. Typical ring structure: (1) Pilot Ring &#8212; IT team, 0-day quality deferral, 0-day feature deferral &#8212; validates the update immediately; (2) Early Adopter Ring &#8212; tech-savvy users, 7-day quality / 30-day feature &#8212; real-world validation before broad rollout; (3) Broad Ring &#8212; all corporate devices, 14-day quality / 60-day feature &#8212; protected from bad patches. Compliance deadlines (e.g. Quality = 5 days, Feature = 14 days) enforce installation and prevent users from snoozing restarts indefinitely. Pause capability (up to 35 days) lets you halt a bad patch across a ring without touching individual devices.',
+         sc:'A Patch Tuesday update (KB5034441) caused BSOD on specific HP ProBook models. Our Pilot ring (15 IT laptops) hit the BSOD immediately. We paused the Broad ring (600 devices) within 10 minutes &#8212; before any user was affected. Filed a support case with Microsoft. 6 days later Microsoft released a revised update. We un-paused the ring. Only 15 IT devices were impacted. Without rings, 600 user devices would have BSODed simultaneously.',
+         fu:['What is the difference between quality updates and feature updates in Windows Update rings?','What happens if you leave an update ring paused for more than 35 days?','How do Windows Update rings interact with co-managed devices using SCCM?']},
+
+        {q:'What are compliance deadlines in Windows Update Rings and why are they essential?',
+         lvl:'intermediate',lc:'#ffd700',ll:'Intermediate',cat:'updates',cl:'Windows Updates',
+         a:'Compliance deadlines in update rings define a hard cutoff: devices must install the update within N days of it becoming available, regardless of deferral period or user snooze preference. Without deadlines, Windows gives users the option to defer restarts almost indefinitely &#8212; leading to a long tail of unpatched devices that represent a security risk. Key settings: Deadline for quality updates (5 days recommended), Deadline for feature updates (14 days recommended), Grace period (2 days &#8212; final warning before forced restart), and Restart checks. Important: the deadline clock starts when the update becomes available to the device (i.e. after the deferral period expires). So a 14-day quality deferral + 5-day deadline = update must install within 19 days of patch release. This is completely transparent to users &#8212; they see a countdown notification and are given the grace period to choose a convenient restart time before the system forces one.',
+         sc:'Before compliance deadlines, our patch compliance report showed only 62% of devices on the current quality update after 30 days &#8212; the rest were snoozing restarts. After setting Quality deadline = 5 days, Grace period = 2 days on all rings, 30-day patch compliance jumped to 97%. The remaining 3% were offline devices that had not checked in. Users initially complained about forced restarts &#8212; we resolved this by setting Active hours to 8 AM&#8211;6 PM so forced restarts only occurred outside business hours.',
+         fu:['What is the Active Hours setting and how does it interact with compliance deadlines?','Can you use both a Windows Update ring and a Feature Updates policy on the same device?','How do you check whether compliance deadline settings are applied correctly on a device?']},
 
         // ── ADVANCED ─────────────────────────────────────────
         {q:'A device shows as non-compliant. Walk through your full troubleshooting process.',
