@@ -1,9 +1,8 @@
 // ============================================================
-// INTUNE HUB — APP CONTROLLER
-// Extended with Script Generator navigation
+// INTUNE LEARNING HUB — APP CONTROLLER
 // ============================================================
 
-const TOTAL_MODULES = 25; // 16 original + 9 PS learning modules
+const TOTAL_MODULES = 16;
 let completedModules = new Set(JSON.parse(localStorage.getItem('intuneCompleted') || '[]'));
 
 // ──────────────────────────────────────────────
@@ -55,16 +54,11 @@ function showPage(id) {
     main.innerHTML = `<h2 style="padding:20px">Page not found: ${id}</h2>`;
   }
 
-  // scroll to top
+  // scroll to top (handles both mobile body scroll and desktop main scroll)
   main.scrollTop = 0;
   window.scrollTo(0, 0);
 
   if (id === 'e3') setTimeout(restoreLabTasks, 50);
-
-  // Script library: render list after DOM is ready
-  if (id === 'script-library') {
-    setTimeout(() => { SE_libraryFilter = ''; SE_libraryCat = 'all'; seRenderLibraryList(); }, 50);
-  }
 
   updateProgress();
   updateDashboardStats();

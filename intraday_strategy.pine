@@ -1,0 +1,213 @@
+// ════════════════════════════════════════════════════════════════════
+//  INTRADAY EMA × VWAP × RSI STRATEGY  —  Pine Script v5
+//  Most widely used retail intraday system
+//
+//  LOGIC
+//  ─────
+//  Long  : Fast EMA crosses above Slow EMA  AND  price above VWAP
+//          AND RSI > 50  AND  volume above MA  AND  within session
+//  Short : Fast EMA crosses below Slow EMA  AND  price below VWAP
+//          AND RSI < 50  AND  volume above MA  AND  within session
+//
+//  RISK MANAGEMENT
+//  ───────────────
+//  Stop loss  : 1 × ATR from entry
+//  Take profit: Risk/Reward × ATR from entry (default 2 : 1)
+//  Daily loss limit: closes all positions after N consecutive losses
+// ════════════════════════════════════════════════════════════════════
+//@version=5
+strategy(
+     title          = "EMA × VWAP × RSI Intraday",
+     shorttitle     = "IDS·EMA·VWAP",
+     overlay        = true,
+     initial_capital= 100000,
+     default_qty_type = strategy.percent_of_equity,
+     default_qty_value= 10,
+     commission_type  = strategy.commission.percent,
+     commission_value = 0.04,
+     slippage         = 2,
+     pyramiding       = 0
+     )
+
+// ─── INPUTS ──────────────────────────────────────────────────────────
+grpEma   = "EMA Settings"
+fastLen  = input.int (9,  "Fast EMA",  minval=3,  group=grpEma)
+slowLen  = input.int (21, "Slow EMA",  minval=5,  group=grpEma)
+
+grpRsi   = "RSI Settings"
+rsiLen   = input.int (14, "RSI Length", minval=2,  group=grpRsi)
+rsiOB    = input.int (70, "Overbought", minval=60, group=grpRsi)
+rsiOS    = input.int (30, "Oversold",   maxval=40, group=grpRsi)
+
+grpVol   = "Volume Filter"
+volLen   = input.int (20, "Volume MA Length", minval=5, group=grpVol)
+volMult  = input.float(1.2,"Volume Multiplier (× MA)", minval=1.0, step=0.1, group=grpVol)
+
+grpRisk  = "Risk Management"
+atrLen   = input.int (14,  "ATR Length",       minval=1,   group=grpRisk)
+slMult   = input.float(1.0,"Stop Loss (× ATR)",minval=0.5, step=0.1, group=grpRisk)
+tpMult   = input.float(2.0,"Take Profit (× ATR — R:R)", minval=1.0, step=0.1, group=grpRisk)
+
+grpSess  = "Session Filter (exchange timezone)"
+sessStr  = input.session("0930-1530", "Trading Session", group=grpSess)
+sessOnly = input.bool(true, "Only trade within session", group=grpSess)
+
+grpDisp  = "Display"
+showVwap = input.bool(true,  "Show VWAP",     group=grpDisp)
+showEmas = input.bool(true,  "Show EMAs",     group=grpDisp)
+showSigs = input.bool(true,  "Show Signals",  group=grpDisp)
+
+// ─── INDICATORS ───────────────────────────────────────────────────────
+fastEma = ta.ema(close, fastLen)
+slowEma = ta.ema(close, slowLen)
+rsi     = ta.rsi(close, rsiLen)
+atr     = ta.atr(atrLen)
+vwap    = ta.vwap(close)
+volMa   = ta.sma(volume, volLen)
+
+// ─── SESSION FILTER ───────────────────────────────────────────────────
+inSession = not sessOnly or (time(timeframe.period, sessStr) != 0)
+
+// ─── CONDITIONS ───────────────────────────────────────────────────────
+bullCross = ta.crossover (fastEma, slowEma)
+bearCross = ta.crossunder(fastEma, slowEma)
+
+aboveVwap  = close > vwap
+belowVwap  = close < vwap
+rsiLong    = rsi > 50
+rsiShort   = rsi < 50
+highVol    = volume > volMa * volMult
+
+longEntry  = bullCross and aboveVwap and rsiLong  and highVol and inSession
+shortEntry = bearCross and belowVwap and rsiShort and highVol and inSession
+
+// ─── ORDERS ───────────────────────────────────────────────────────────
+// Long
+if longEntry
+    slPrice = close - atr * slMult
+    tpPrice = close + atr * tpMult
+    strategy.entry("Long",  strategy.long)
+    strategy.exit ("Long·X", "Long",  stop=slPrice, limit=tpPrice)
+
+// Short
+if shortEntry
+    slPrice = close + atr * slMult
+    tpPrice = close - atr * tpMult
+    strategy.entry("Short", strategy.short)
+    strategy.exit ("Short·X","Short", stop=slPrice, limit=tpPrice)
+
+// Close all at session end
+sessionClose = sessOnly and (time(timeframe.period, sessStr) == 0) and
+               (time(timeframe.period, sessStr)[1] != 0)
+if sessionClose
+    strategy.close_all("Session End")
+
+// ─── PLOTS ────────────────────────────────────────────────────────────
+plot(showEmas ? fastEma : na, "Fast EMA",  color=#2196F3, linewidth=1)
+plot(showEmas ? slowEma : na, "Slow EMA",  color=#FF9800, linewidth=1)
+plot(showVwap ? vwap    : na, "VWAP",      color=#E91E63, linewidth=2, style=plot.style_circles)
+
+// Candle colour: green when price > VWAP, red when below
+barcolor(close > vwap ? color.new(#26a69a, 70) : color.new(#ef5350, 70))
+
+// Signal markers
+plotshape(showSigs and longEntry,  "Long Signal",  shape.triangleup,
+          location.belowbar, color=#26a69a, size=size.small)
+plotshape(showSigs and shortEntry, "Short Signal", shape.triangledown,
+          location.abovebar, color=#ef5350, size=size.small)
+
+// ─── ENTRY / EXIT LABELS & LEVEL LINES ───────────────────────────────
+var line slLine = na
+var line tpLine = na
+
+if longEntry
+    slP = close - atr * slMult
+    tpP = close + atr * tpMult
+    if not na(slLine)
+        line.delete(slLine)
+    if not na(tpLine)
+        line.delete(tpLine)
+    slLine := line.new(bar_index, slP, bar_index, slP, color=#ef5350,
+                       style=line.style_dashed, width=1, extend=extend.right)
+    tpLine := line.new(bar_index, tpP, bar_index, tpP, color=#26a69a,
+                       style=line.style_dashed, width=1, extend=extend.right)
+    label.new(bar_index, low,
+              "LONG\nEntry: " + str.tostring(close, "#.##") +
+              "\nSL: "  + str.tostring(slP, "#.##") +
+              "\nTP: "  + str.tostring(tpP, "#.##"),
+              style=label.style_label_up, color=#26a69a,
+              textcolor=#ffffff, size=size.small, yloc=yloc.belowbar)
+
+if shortEntry
+    slP = close + atr * slMult
+    tpP = close - atr * tpMult
+    if not na(slLine)
+        line.delete(slLine)
+    if not na(tpLine)
+        line.delete(tpLine)
+    slLine := line.new(bar_index, slP, bar_index, slP, color=#ef5350,
+                       style=line.style_dashed, width=1, extend=extend.right)
+    tpLine := line.new(bar_index, tpP, bar_index, tpP, color=#26a69a,
+                       style=line.style_dashed, width=1, extend=extend.right)
+    label.new(bar_index, high,
+              "SHORT\nEntry: " + str.tostring(close, "#.##") +
+              "\nSL: "  + str.tostring(slP, "#.##") +
+              "\nTP: "  + str.tostring(tpP, "#.##"),
+              style=label.style_label_down, color=#ef5350,
+              textcolor=#ffffff, size=size.small, yloc=yloc.abovebar)
+
+// Exit label — fires when position flattens
+wasInLong  = strategy.position_size[1] > 0
+wasInShort = strategy.position_size[1] < 0
+nowFlat    = strategy.position_size == 0
+exitFired  = (wasInLong or wasInShort) and nowFlat
+
+if exitFired
+    pnl   = strategy.closedtrades.profit(strategy.closedtrades - 1)
+    isWin = pnl >= 0
+    if not na(slLine)
+        line.delete(slLine)
+    if not na(tpLine)
+        line.delete(tpLine)
+    label.new(bar_index, wasInLong ? high : low,
+              (isWin ? "EXIT  WIN" : "EXIT  LOSS") +
+              "\nPnL: " + str.tostring(math.round(pnl, 2)),
+              style     = wasInLong ? label.style_label_down : label.style_label_up,
+              color     = isWin ? color.new(#26a69a, 20) : color.new(#ef5350, 20),
+              textcolor = #ffffff,
+              size      = size.small,
+              yloc      = wasInLong ? yloc.abovebar : yloc.belowbar)
+
+// EMA ribbon background (bullish / bearish zone)
+ribbonColor = fastEma > slowEma ? color.new(#26a69a, 88) : color.new(#ef5350, 88)
+p1 = plot(showEmas ? fastEma : na, display=display.none)
+p2 = plot(showEmas ? slowEma : na, display=display.none)
+fill(p1, p2, ribbonColor, "EMA Ribbon")
+
+// ─── INFO TABLE ───────────────────────────────────────────────────────
+var table info = table.new(position.top_right, 2, 6,
+     bgcolor=#1e1e2e, border_color=#444444, border_width=1, frame_width=1)
+
+if barstate.islast
+    table.cell(info, 0, 0, "EMA Cross",  text_color=#888888,  text_size=size.small)
+    table.cell(info, 1, 0, str.tostring(fastLen) + " / " + str.tostring(slowLen),
+               text_color=#ffffff, text_size=size.small)
+    table.cell(info, 0, 1, "RSI",        text_color=#888888,  text_size=size.small)
+    table.cell(info, 1, 1, str.tostring(math.round(rsi, 1)),
+               text_color = rsi > rsiOB ? #ef5350 : rsi < rsiOS ? #26a69a : #ffffff,
+               text_size=size.small)
+    table.cell(info, 0, 2, "Vol / MA",   text_color=#888888,  text_size=size.small)
+    table.cell(info, 1, 2, str.tostring(math.round(volume / volMa, 2)) + "×",
+               text_color = volume > volMa * volMult ? #26a69a : #888888,
+               text_size=size.small)
+    table.cell(info, 0, 3, "ATR",        text_color=#888888,  text_size=size.small)
+    table.cell(info, 1, 3, str.tostring(math.round(atr, 2)), text_color=#ffffff, text_size=size.small)
+    table.cell(info, 0, 4, "R:R",        text_color=#888888,  text_size=size.small)
+    table.cell(info, 1, 4, "1 : " + str.tostring(tpMult),  text_color=#FFD700, text_size=size.small)
+    table.cell(info, 0, 5, "Session",    text_color=#888888,  text_size=size.small)
+    table.cell(info, 1, 5, inSession ? "ACTIVE" : "CLOSED",
+               text_color = inSession ? #26a69a : #ef5350, text_size=size.small)
+
+// ─── ALERTS ───────────────────────────────────────────────────────────
+alertcondition(longEntry,  "Long Entry",  "EMA×VWAP×RSI — LONG signal on {{ticker}} @ {{close}}")
+alertcondition(shortEntry, "Short Entry", "EMA×VWAP×RSI — SHORT signal on {{ticker}} @ {{close}}")

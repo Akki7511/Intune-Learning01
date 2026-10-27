@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>How to Add Stay Active Bookmarklet in Edge</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f3f4f6; color: #1f2937; }
+
+  header {
+    background: #0f4c81;
+    color: white;
+    padding: 24px 40px;
+  }
+  header h1 { font-size: 22px; font-weight: 600; }
+  header p { font-size: 14px; opacity: .8; margin-top: 4px; }
+
+  .container { max-width: 860px; margin: 36px auto; padding: 0 20px 60px; }
+
+  .step {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 24px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .step-num {
+    width: 36px; height: 36px;
+    background: #0f4c81;
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px;
+    flex-shrink: 0;
+  }
+  .step-header h2 { font-size: 16px; font-weight: 600; }
+  .step-header p { font-size: 13px; color: #6b7280; margin-top: 2px; }
+
+  .step-body { padding: 20px 24px; }
+
+  /* Browser mockup */
+  .browser {
+    border: 2px solid #d1d5db;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,.1);
+  }
+  .browser-bar {
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .browser-dots { display: flex; gap: 6px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot.r { background: #ef4444; }
+  .dot.y { background: #f59e0b; }
+  .dot.g { background: #22c55e; }
+  .url-bar {
+    flex: 1;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    color: #6b7280;
+  }
+  .bookmark-bar {
+    background: #f1f3f4;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 5px 14px;
+    font-size: 12px;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 30px;
+  }
+  .bm-item {
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-size: 11px;
+    cursor: default;
+    white-space: nowrap;
+  }
+  .bm-item.new {
+    background: #ecfdf5;
+    border-color: #22c55e;
+    color: #166534;
+    font-weight: 600;
+  }
+  .browser-body {
+    background: #f9fafb;
+    min-height: 80px;
+    padding: 20px;
+    font-size: 12px;
+    color: #9ca3af;
+    position: relative;
+  }
+
+  /* Keyboard shortcut badge */
+  kbd {
+    background: #1f2937;
+    color: #f9fafb;
+    border-radius: 5px;
+    padding: 3px 9px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .5px;
+  }
+
+  /* Highlight annotation */
+  .annotation {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fef9c3;
+    border: 1px solid #fde047;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    margin-top: 10px;
+  }
+
+  /* Copy box */
+  .copy-box {
+    background: #0f172a;
+    color: #a3e635;
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-family: 'Courier New', monospace;
+    font-size: 11.5px;
+    word-break: break-all;
+    line-height: 1.7;
+    position: relative;
+    margin-top: 12px;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: #334155;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .copy-btn:hover { background: #475569; }
+  .copy-btn.copied { background: #15803d; color: white; }
+
+  /* Context menu mockup */
+  .context-menu {
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    width: 200px;
+    overflow: hidden;
+    margin: 12px 0;
+  }
+  .menu-item {
+    padding: 9px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item.highlight {
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+  }
+  .menu-item .icon { font-size: 15px; }
+
+  /* Dialog mockup */
+  .dialog {
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.2);
+    width: 340px;
+    overflow: hidden;
+    margin: 12px 0;
+  }
+  .dialog-title {
+    background: #f3f4f6;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .dialog-body { padding: 16px; }
+  .field { margin-bottom: 12px; }
+  .field label { font-size: 12px; color: #6b7280; display: block; margin-bottom: 4px; }
+  .field input {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 13px;
+    color: #111827;
+  }
+  .field input.green { border-color: #22c55e; background: #f0fdf4; }
+  .dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid #e5e7eb;
+  }
+  .btn { padding: 7px 18px; border-radius: 6px; font-size: 13px; border: none; cursor: pointer; }
+  .btn.primary { background: #0f4c81; color: white; font-weight: 600; }
+  .btn.secondary { background: #f3f4f6; color: #374151; }
+
+  /* Arrow pointer */
+  .arrow-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 13px; color: #374151; }
+  .arrow { font-size: 18px; color: #ef4444; }
+
+  /* Result badge */
+  .result-badge {
+    display: inline-block;
+    background: #1b5e20;
+    color: white;
+    border-radius: 24px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  }
+
+  .tip {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    font-size: 13px;
+    margin-top: 14px;
+    color: #1e40af;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>How to Add "Stay Active" Bookmarklet in Microsoft Edge</h1>
+  <p>Prevents SAP ServiceNow from going offline due to inactivity — 4 simple steps</p>
+</header>
+
+<div class="container">
+
+  <!-- STEP 1 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div>
+        <h2>Show the Bookmarks Bar</h2>
+        <p>Press this keyboard shortcut to make the bookmarks bar visible</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="arrow-row">
+        <span>Press:</span>
+        <kbd>Ctrl</kbd> <span>+</span> <kbd>Shift</kbd> <span>+</span> <kbd>B</kbd>
+      </div>
+      <div class="browser" style="margin-top:14px;">
+        <div class="browser-bar">
+          <div class="browser-dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <div class="url-bar">https://itsm.services.sap/now/sow/inbox</div>
+        </div>
+        <div class="bookmark-bar">
+          <span style="color:#6b7280;font-size:11px;">📌 Bookmarks bar now visible here</span>
+        </div>
+        <div class="browser-body">SAP ServiceNow page content...</div>
+      </div>
+      <div class="annotation">💡 If the bar was already visible, skip this step</div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div>
+        <h2>Copy the Bookmarklet Code</h2>
+        <p>Click the Copy button below to copy the full bookmarklet script</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="copy-box" id="codeBox">
+        javascript:(function(){var ID='_snAntiIdle';if(window[ID]){clearInterval(window[ID]);window[ID]=null;var b=document.getElementById(ID);if(b)b.remove();return;}var b=document.createElement('div');b.id=ID;b.title='Click to stop';b.style.cssText='position:fixed;bottom:20px;right:20px;z-index:2147483647;background:#1b5e20;color:#fff;padding:8px 16px;border-radius:24px;font-size:13px;font-weight:600;font-family:Arial,sans-serif;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.4);';b.textContent='● Stay Active: ON';b.onclick=function(){clearInterval(window[ID]);window[ID]=null;b.style.background='#b71c1c';b.textContent='● Stay Active: OFF';setTimeout(function(){b.remove();},2000);};document.body.appendChild(b);function ping(){['mousemove','mousedown','keydown'].forEach(function(t){document.dispatchEvent(new Event(t,{bubbles:true}));});}ping();window[ID]=setInterval(ping,60000);})();
+        <button class="copy-btn" id="copyBtn" onclick="copyCode()">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div>
+        <h2>Right-click the Bookmarks Bar → Add Page</h2>
+        <p>Right-click on any empty space on the bookmarks bar to get the context menu</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="browser">
+        <div class="browser-bar">
+          <div class="browser-dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <div class="url-bar">https://itsm.services.sap/now/sow/inbox</div>
+        </div>
+        <div class="bookmark-bar" style="cursor:context-menu;">
+          <span style="color:#9ca3af;font-size:11px;font-style:italic;">← Right-click empty space here</span>
+        </div>
+        <div class="browser-body" style="display:flex;gap:20px;align-items:flex-start;padding:14px 20px;">
+          <div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">Context menu appears:</div>
+            <div class="context-menu">
+              <div class="menu-item"><span class="icon">📂</span> Open bookmarks manager</div>
+              <div class="menu-item"><span class="icon">📤</span> Import bookmarks</div>
+              <div class="menu-item highlight"><span class="icon">➕</span> Add page...</div>
+              <div class="menu-item"><span class="icon">📁</span> Add folder...</div>
+              <div class="menu-item"><span class="icon">👁</span> Show favorites bar</div>
+            </div>
+          </div>
+          <div class="arrow-row" style="margin-top:60px;flex-direction:column;align-items:flex-start;">
+            <span class="arrow">👆</span>
+            <span style="font-size:13px;color:#ef4444;font-weight:600;">Click "Add page..."</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <div>
+        <h2>Fill in Name & URL — then Save</h2>
+        <p>A dialog box opens — enter the name and paste the copied code as the URL</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+        <div>
+          <div class="dialog">
+            <div class="dialog-title">Add a favorite</div>
+            <div class="dialog-body">
+              <div class="field">
+                <label>Name</label>
+                <input type="text" value="Stay Active" class="green" readonly>
+              </div>
+              <div class="field">
+                <label>URL</label>
+                <input type="text" value="javascript:(function(){var ID=..." class="green" readonly>
+              </div>
+            </div>
+            <div class="dialog-footer">
+              <button class="btn secondary">Cancel</button>
+              <button class="btn primary">Done</button>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:13px;line-height:1.8;margin-top:10px;">
+          <div class="arrow-row"><span style="background:#0f4c81;color:white;border-radius:4px;padding:2px 8px;font-size:12px;">Name</span> Type: <strong>Stay Active</strong></div>
+          <div class="arrow-row"><span style="background:#0f4c81;color:white;border-radius:4px;padding:2px 8px;font-size:12px;">URL</span> Paste the copied code</div>
+          <div class="arrow-row"><span class="arrow">→</span> Click <strong>Done</strong></div>
+        </div>
+      </div>
+      <div class="tip">⚠️ Edge may warn "Can't use this address". <strong>Ignore it and click Done anyway</strong> — this is normal for bookmarklets.</div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">✓</div>
+      <div>
+        <h2>Done! Here's how to use it</h2>
+        <p>Your bookmarklet is ready on the bookmarks bar</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="browser">
+        <div class="browser-bar">
+          <div class="browser-dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <div class="url-bar">https://itsm.services.sap/now/sow/inbox</div>
+        </div>
+        <div class="bookmark-bar">
+          <div class="bm-item">SAP Fiori</div>
+          <div class="bm-item">Inbox</div>
+          <div class="bm-item new">● Stay Active</div>
+          <span style="color:#9ca3af;font-size:11px;">← Click this on the SAP page</span>
+        </div>
+        <div class="browser-body">
+          SAP ServiceNow page...
+          <div style="position:absolute;bottom:14px;right:14px;">
+            <div class="result-badge">● Stay Active: ON</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:16px;font-size:13px;line-height:2;">
+        <div class="arrow-row"><span class="arrow">1.</span> Open the SAP ServiceNow page</div>
+        <div class="arrow-row"><span class="arrow">2.</span> Click <strong>Stay Active</strong> from the bookmarks bar</div>
+        <div class="arrow-row"><span class="arrow">3.</span> Green badge appears bottom-right — you're protected</div>
+        <div class="arrow-row"><span class="arrow">4.</span> Click the green badge to turn it OFF when you're done</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function copyCode() {
+  var code = "javascript:(function(){var ID='_snAntiIdle';if(window[ID]){clearInterval(window[ID]);window[ID]=null;var b=document.getElementById(ID);if(b)b.remove();return;}var b=document.createElement('div');b.id=ID;b.title='Click to stop';b.style.cssText='position:fixed;bottom:20px;right:20px;z-index:2147483647;background:#1b5e20;color:#fff;padding:8px 16px;border-radius:24px;font-size:13px;font-weight:600;font-family:Arial,sans-serif;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.4);';b.textContent='\\u25CF Stay Active: ON';b.onclick=function(){clearInterval(window[ID]);window[ID]=null;b.style.background='#b71c1c';b.textContent='\\u25CF Stay Active: OFF';setTimeout(function(){b.remove();},2000);};document.body.appendChild(b);function ping(){['mousemove','mousedown','keydown'].forEach(function(t){document.dispatchEvent(new Event(t,{bubbles:true}));});}ping();window[ID]=setInterval(ping,60000);})();";
+  navigator.clipboard.writeText(code).then(function() {
+    var btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(function(){ btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2500);
+  });
+}
+</script>
+</body>
+</html>

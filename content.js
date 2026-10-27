@@ -1333,6 +1333,106 @@ HKEY_LOCAL_MACHINE\\SOFTWARE\\7-Zip  →  Value: Path  →  Exists
   </div>
 </div>
 
+<div class="section">
+  <h2>⚙️ Backend Deployment Flow — What Actually Happens</h2>
+  <p>When you click <strong>Create</strong> on an app assignment in Intune, a chain of backend events fires across Azure and the device. Here is the full pipeline for a Win32 app:</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-content">
+        <div class="step-title">1 · Upload &amp; Encrypt (Admin side)</div>
+        <div class="step-desc">The <strong>.intunewin</strong> file is AES-256 encrypted by the Win32 Content Prep Tool before it even leaves your machine. Intune uploads the ciphertext + an encrypted key blob to <strong>Azure Blob Storage</strong> (Intune's CDN backed by Akamai). The encryption key is stored separately in the Intune service — the CDN never has the key, so raw blobs are useless if intercepted.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-content">
+        <div class="step-title">2 · Assignment written to Intune service</div>
+        <div class="step-desc">Assigning the app to a group writes a policy record to the <strong>Intune backend (Azure)</strong> via the Graph API. The record links: App ID → Group ID → Intent (Required / Available / Uninstall). No data is pushed to the device yet — the device must pull it.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-content">
+        <div class="step-title">3 · Device check-in triggers (IME polling)</div>
+        <div class="step-desc">The <strong>Intune Management Extension (IME)</strong> — a Windows service running as <code>SYSTEM</code> at <code>C:\Program Files (x86)\Microsoft Intune Management Extension\</code> — polls the Intune service every <strong>60 minutes</strong> over HTTPS. You can also force it instantly via <em>Devices → [device] → Sync</em>, or the user can sync from Company Portal. IME authenticates using the device's <strong>Azure AD device certificate</strong> (no username/password).</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-content">
+        <div class="step-title">4 · Intune evaluates group membership &amp; sends manifest</div>
+        <div class="step-desc">The Intune service checks whether the device (or its user) is a member of the assignment group at that moment. If yes, it returns an <strong>app manifest</strong> — a JSON payload containing: CDN download URL, the encrypted AES key, install command, uninstall command, detection rule, return codes, and retry settings. No binary is sent at this stage — only metadata.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-content">
+        <div class="step-title">5 · IME downloads the .intunewin from Azure CDN</div>
+        <div class="step-desc">IME fetches the encrypted blob from <strong>Akamai CDN</strong> (Microsoft's delivery network) to a local temp folder: <code>C:\Windows\IMECache\[AppID]\</code>. Download happens in chunks with resume support — safe across intermittent connections. The file stays encrypted on disk at this point.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-content">
+        <div class="step-title">6 · IME decrypts the package</div>
+        <div class="step-desc">IME uses the AES key from the manifest (delivered over the authenticated HTTPS channel) to decrypt the blob in memory / temp location. The result is your original installer (setup.exe, .msi, etc.) extracted to <code>C:\Windows\IMECache\[AppID]\</code>.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-content">
+        <div class="step-title">7 · IME runs the install command as SYSTEM</div>
+        <div class="step-desc">IME spawns the installer using the <strong>install command</strong> you configured (e.g. <code>setup.exe /silent</code>), running as <code>NT AUTHORITY\SYSTEM</code> by default — or as the logged-in user if you enabled the "Run as logged-on credentials" option. The process runs silently; no user interaction window appears for Required assignments.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-content">
+        <div class="step-title">8 · Detection rule runs to confirm success</div>
+        <div class="step-desc">After the install command exits, IME runs your <strong>detection rule</strong>: checks the registry key, file path, or MSI product code you specified. If the rule passes → success. If the installer returned a non-zero exit code <em>and</em> the detection rule fails → IME marks the install as failed and schedules a retry (up to 3 attempts by default, 24-hour intervals).</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-content">
+        <div class="step-title">9 · Status reported back to Intune service</div>
+        <div class="step-desc">IME sends a status report to the Intune backend over HTTPS: <code>Installed</code>, <code>Failed</code>, <code>Not applicable</code>, or <code>Pending restart</code>. This is visible within minutes at <em>Apps → Monitor → App install status</em>. The report includes the Win32 error code (e.g. <code>0x87D300D9</code> = IME not installed; <code>0x80070005</code> = access denied) so you can diagnose without touching the device.</div>
+      </div>
+    </div>
+    <div class="step config-step-last">
+      <div class="step-content">
+        <div class="step-title">10 · Temp files cleaned up</div>
+        <div class="step-desc">After a successful install and status report, IME removes the cached installer from <code>C:\Windows\IMECache\</code>. IME logs every step to <code>C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\IntuneManagementExtension.log</code> — the first place to look when an install fails.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <span>🔍</span>
+    <div><strong>Key log files for troubleshooting:</strong><br>
+    <code>C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\IntuneManagementExtension.log</code> — main IME log (check-ins, policy receipts, app installs)<br>
+    <code>C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\AgentExecutor.log</code> — installer execution and exit codes<br>
+    <code>C:\Windows\IMECache\</code> — downloaded (encrypted) package cache
+    </div>
+  </div>
+
+  <div class="section" style="background:var(--surface2);border-radius:var(--radius);padding:16px;margin-top:12px;">
+    <h3 style="font-size:14px;margin-bottom:10px;color:var(--accent2);">Backend Flow Summary</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;">
+      <span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;">Admin uploads</span>
+      <span style="color:var(--muted);">→</span>
+      <span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;">Azure Blob (encrypted)</span>
+      <span style="color:var(--muted);">→</span>
+      <span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;">Assignment record</span>
+      <span style="color:var(--muted);">→</span>
+      <span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;">IME polls (60 min)</span>
+      <span style="color:var(--muted);">→</span>
+      <span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;">Manifest + AES key</span>
+      <span style="color:var(--muted);">→</span>
+      <span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;">Download from CDN</span>
+      <span style="color:var(--muted);">→</span>
+      <span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;">Decrypt &amp; install (SYSTEM)</span>
+      <span style="color:var(--muted);">→</span>
+      <span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;">Detection rule</span>
+      <span style="color:var(--muted);">→</span>
+      <span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;">Status → Intune portal</span>
+    </div>
+  </div>
+</div>
+
 ${configStepsSection('b4')}
 ${visualSection('b4')}
 ${videoSection('b4')}
